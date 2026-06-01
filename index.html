@@ -28,6 +28,11 @@ body{font-family:'Trebuchet MS','Segoe UI',sans-serif;background:var(--branco);c
 #inicio .edu p{font-size:13px;line-height:1.5;margin:0 0 9px;}
 #inicio .edu p:last-child{margin-bottom:0;}
 #inicio .edu b{color:#1b7fa8;}
+.sel-pers-box{background:rgba(255,255,255,.85);border-radius:16px;padding:12px 14px;margin:4px 0 14px;max-width:340px;width:100%;}
+.sel-pers-tit{font-size:13px;color:#1b6e8c;font-weight:bold;margin-bottom:8px;}
+.sel-pers-row{display:flex;gap:10px;}
+.sel-pers{flex:1;padding:12px 8px;border:2px solid #cfe3ec;border-radius:12px;background:#fff;color:#356;font-family:inherit;font-size:14px;font-weight:bold;cursor:pointer;transition:all .15s;}
+.sel-pers.on{border-color:#f4a93a;background:#fff4e0;color:#b26a00;transform:scale(1.03);}
 .rk-box{background:#f3efe2;border-radius:14px;padding:12px;margin-top:12px;text-align:left;}
 .rk-box h4{margin:0 0 8px;font-size:14px;color:var(--verde);text-align:center;}
 .rk-salvar{display:flex;gap:6px;margin-bottom:10px;}
@@ -116,6 +121,13 @@ body{font-family:'Trebuchet MS','Segoe UI',sans-serif;background:var(--branco);c
       <p>🌱 Aqui se joga no <b>pesque e solte</b>: todo peixe volta vivo pra água. É assim que a fartura continua.</p>
     </div>
     <div class="fest">FIPe · Festival Internacional de Pesca Esportiva · Cáceres-MT</div>
+    <div class="sel-pers-box">
+      <div class="sel-pers-tit">Escolha quem vai pescar</div>
+      <div class="sel-pers-row">
+        <button class="sel-pers on" data-p="homem" onclick="escolherPersonagem('homem')">👨 Pescador</button>
+        <button class="sel-pers" data-p="mulher" onclick="escolherPersonagem('mulher')">👩 Pescadora</button>
+      </div>
+    </div>
     <button class="btn grande" onclick="iniciar()">PESCAR ▸</button>
     <button class="btn sec grande" onclick="abrirInfo()">Conhecer os peixes</button>
     <button class="btn sec grande" onclick="abrirRanking()">🌎 Ranking Global</button>
@@ -291,6 +303,10 @@ const PESQUEIROS=[
 ];
 
 let rodada=0,pontos=0,iscaSel=null;
+let personagem='homem';   // 'homem' ou 'mulher' — escolhido na tela inicial
+function escolherPersonagem(p){ personagem=p;
+  document.querySelectorAll('.sel-pers').forEach(b=>b.classList.toggle('on', b.dataset.p===p));
+}
 // ===== FIREBASE — RANKING GLOBAL (mesma base do Dourado, caminho /fipe_ranking) =====
 const FB_URL='https://dourado-pantanal-default-rtdb.firebaseio.com';
 let rankingGlobal=[];
@@ -1215,25 +1231,48 @@ function drawPescador(){
 
   ctx.save();
   ctx.lineCap='round';ctx.lineJoin='round';
-  const PELE='#c98d5a', PELE_D='#a9713f', CAMISA='#efe9d8', CAMISA_S='#d8cfb4', CALCA='#6e4b2a', CALCA_S='#5a3c20';
+  const fem = (personagem==='mulher');
+  const PELE='#c98d5a', PELE_D='#a9713f';
+  // homem: camisa creme + calça marrom; mulher: blusa coral + saia verde-azulada
+  const CAMISA   = fem ? '#e8896b' : '#efe9d8';
+  const CAMISA_S = fem ? '#cf6f53' : '#d8cfb4';
+  const CALCA    = fem ? '#3f7d77' : '#6e4b2a';
+  const CALCA_S  = fem ? '#2f635e' : '#5a3c20';
   // (sem sombra no chão: o pescador está dentro do barco)
 
   // ===== PERNAS (coxa + canela com joelho) =====
-  // quadril desloca um pouco pra trás quando o tronco vai pra frente (equilíbrio)
   const quadrilX = px - Math.sin(POSE.tronco)*14*esc;
   function perna(dx){
     const qx=quadrilX+dx;
-    // joelho flexiona pra frente conforme POSE.joelho
     const joX=qx+dx*0.3+POSE.joelho*10*esc, joY=quadril+(34-POSE.joelho*6)*esc;
     const peX=qx+dx*0.15;
-    ctx.strokeStyle=CALCA;ctx.lineWidth=13*esc;
-    ctx.beginPath();ctx.moveTo(qx,quadril);ctx.lineTo(joX,joY);ctx.stroke();
-    ctx.strokeStyle=PELE;ctx.lineWidth=8*esc;
-    ctx.beginPath();ctx.moveTo(joX,joY);ctx.lineTo(peX,peY);ctx.stroke();
+    if(fem){
+      // mulher: perna de pele (saia cobre a coxa, desenhada depois)
+      ctx.strokeStyle=PELE;ctx.lineWidth=8.5*esc;
+      ctx.beginPath();ctx.moveTo(qx,quadril);ctx.lineTo(joX,joY);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(joX,joY);ctx.lineTo(peX,peY);ctx.stroke();
+    } else {
+      ctx.strokeStyle=CALCA;ctx.lineWidth=13*esc;
+      ctx.beginPath();ctx.moveTo(qx,quadril);ctx.lineTo(joX,joY);ctx.stroke();
+      ctx.strokeStyle=PELE;ctx.lineWidth=8*esc;
+      ctx.beginPath();ctx.moveTo(joX,joY);ctx.lineTo(peX,peY);ctx.stroke();
+    }
     ctx.strokeStyle='#3a2a1a';ctx.lineWidth=4.5*esc;
     ctx.beginPath();ctx.moveTo(peX-7*esc,peY);ctx.lineTo(peX+9*esc,peY);ctx.stroke();
   }
   perna(-10*esc); perna(8*esc);
+  // SAIA da mulher: trapézio do quadril cobrindo as coxas
+  if(fem){
+    const saiaTop=quadril-2*esc, saiaBot=quadril+30*esc;
+    ctx.fillStyle=CALCA;
+    ctx.beginPath();
+    ctx.moveTo(quadrilX-13*esc,saiaTop);
+    ctx.lineTo(quadrilX+13*esc,saiaTop);
+    ctx.lineTo(quadrilX+24*esc,saiaBot);
+    ctx.quadraticCurveTo(quadrilX,saiaBot+5*esc,quadrilX-24*esc,saiaBot);
+    ctx.closePath();ctx.fill();
+    ctx.strokeStyle=CALCA_S;ctx.lineWidth=1.4;ctx.stroke();
+  }
 
   // ===== BRAÇO DE TRÁS (articulado) — a outra mão também segura o cabo da vara =====
   // ombro de trás fica um pouco atrás e abaixo do ombro da frente
@@ -1262,19 +1301,30 @@ function drawPescador(){
   maoTras.x=tMaoX; maoTras.y=tMaoY;
   // (o desenho do braço de trás vem DEPOIS do tronco, pra não ser coberto)
 
-  // ===== TRONCO (camisa) — conecta quadril ao ombro inclinado =====
+  // ===== TRONCO (blusa/camisa) — conecta quadril ao ombro inclinado =====
   ctx.fillStyle=CAMISA;
   ctx.beginPath();
-  ctx.moveTo(ombroX-17*esc,ombro-2*esc);
-  ctx.quadraticCurveTo(ombroX-20*esc,quadril-20*esc, quadrilX-13*esc,quadril+3*esc);
-  ctx.lineTo(quadrilX+13*esc,quadril+3*esc);
-  ctx.quadraticCurveTo(ombroX+20*esc,quadril-20*esc, ombroX+17*esc,ombro-2*esc);
+  if(fem){
+    // silhueta feminina: cintura marcada (afina no meio, alarga no quadril)
+    const cintY=(ombro+quadril)/2;
+    ctx.moveTo(ombroX-16*esc,ombro-2*esc);
+    ctx.quadraticCurveTo(ombroX-17*esc,cintY-6*esc, quadrilX-8*esc,cintY);   // afina na cintura
+    ctx.quadraticCurveTo(quadrilX-16*esc,quadril, quadrilX-14*esc,quadril+4*esc); // alarga no quadril
+    ctx.lineTo(quadrilX+14*esc,quadril+4*esc);
+    ctx.quadraticCurveTo(quadrilX+16*esc,quadril, quadrilX+8*esc,cintY);
+    ctx.quadraticCurveTo(ombroX+17*esc,cintY-6*esc, ombroX+16*esc,ombro-2*esc);
+  } else {
+    ctx.moveTo(ombroX-17*esc,ombro-2*esc);
+    ctx.quadraticCurveTo(ombroX-20*esc,quadril-20*esc, quadrilX-13*esc,quadril+3*esc);
+    ctx.lineTo(quadrilX+13*esc,quadril+3*esc);
+    ctx.quadraticCurveTo(ombroX+20*esc,quadril-20*esc, ombroX+17*esc,ombro-2*esc);
+  }
   ctx.closePath();ctx.fill();
   ctx.strokeStyle=CAMISA_S;ctx.lineWidth=1.4;ctx.stroke();
   // gola + abertura
   ctx.strokeStyle=CAMISA_S;ctx.lineWidth=2*esc;
   ctx.beginPath();ctx.moveTo(ombroX,ombro);ctx.lineTo(quadrilX,quadril-6*esc);ctx.stroke();
-  ctx.fillStyle='#cfc6ab';
+  ctx.fillStyle=fem?'#cf6f53':'#cfc6ab';
   for(let i=0;i<3;i++){const t=i/3;ctx.beginPath();ctx.arc(ombroX+(quadrilX-ombroX)*t,ombro+14*esc+i*13*esc,1.5,0,7);ctx.fill();}
   ctx.fillStyle=CAMISA;ctx.beginPath();ctx.arc(ombroX,ombro,9*esc,0,7);ctx.fill();
 
@@ -1301,6 +1351,16 @@ function drawPescador(){
   ctx.closePath();ctx.fill();
   // orelha
   ctx.fillStyle=PELE_D;ctx.beginPath();ctx.arc(cabX-cabR*0.4,cabY+cabR*0.05,2.6*esc,0,7);ctx.fill();
+  // CABELO LONGO da mulher: cai pela nuca até abaixo do ombro
+  if(fem){
+    ctx.fillStyle='#3a2415';
+    ctx.beginPath();
+    ctx.moveTo(cabX-cabR*0.5,cabY-cabR*0.9);
+    ctx.quadraticCurveTo(cabX-cabR*1.6,cabY+cabR*0.2, cabX-cabR*1.3,cabY+cabR*2.6);  // massa de cabelo descendo
+    ctx.quadraticCurveTo(cabX-cabR*0.6,cabY+cabR*3.0, cabX-cabR*0.2,cabY+cabR*2.4);
+    ctx.quadraticCurveTo(cabX-cabR*0.5,cabY+cabR*1.0, cabX+cabR*0.2,cabY-cabR*0.6);
+    ctx.closePath();ctx.fill();
+  }
   // cabelo (cobre testa e nuca)
   ctx.fillStyle='#2e2014';
   ctx.beginPath();
@@ -1312,13 +1372,23 @@ function drawPescador(){
   // olho
   ctx.fillStyle='#2e2014';ctx.beginPath();ctx.arc(cabX+cabR*0.45,cabY-cabR*0.05,1.6*esc,0,7);ctx.fill();
   // bigode
-  ctx.fillStyle='#2e2014';ctx.beginPath();ctx.ellipse(cabX+cabR*0.5,cabY+cabR*0.45,4*esc,1.6*esc,0,0,7);ctx.fill();
+  if(!fem){ ctx.fillStyle='#2e2014';ctx.beginPath();ctx.ellipse(cabX+cabR*0.5,cabY+cabR*0.45,4*esc,1.6*esc,0,0,7);ctx.fill(); } // bigode (só homem)
   // ===== CHAPÉU DE PALHA =====
   ctx.fillStyle='#dcb86e';
-  ctx.beginPath();ctx.ellipse(cabX,cabY-cabR*0.7,cabR*1.9,cabR*0.5,0,0,7);ctx.fill(); // aba
-  ctx.beginPath();ctx.ellipse(cabX+1*esc,cabY-cabR*1.05,cabR*0.95,cabR*0.8,0,Math.PI,2*Math.PI);ctx.fill(); // copa
-  ctx.strokeStyle='#b8924a';ctx.lineWidth=1.3;ctx.stroke();
-  ctx.fillStyle='#b8924a';ctx.fillRect(cabX-cabR*0.9,cabY-cabR*0.95,cabR*1.8,1.6*esc); // faixa
+  if(fem){
+    // chapéu feminino: aba mais larga e inclinada, fita colorida e florzinha
+    ctx.beginPath();ctx.ellipse(cabX,cabY-cabR*0.6,cabR*2.3,cabR*0.55,0.08,0,7);ctx.fill(); // aba larga
+    ctx.beginPath();ctx.ellipse(cabX+1*esc,cabY-cabR*1.0,cabR*0.9,cabR*0.7,0,Math.PI,2*Math.PI);ctx.fill(); // copa
+    ctx.strokeStyle='#b8924a';ctx.lineWidth=1.3;ctx.stroke();
+    ctx.fillStyle='#e8896b';ctx.fillRect(cabX-cabR*0.85,cabY-cabR*0.9,cabR*1.7,2*esc); // fita coral
+    ctx.fillStyle='#f4d35e';ctx.beginPath();ctx.arc(cabX+cabR*0.9,cabY-cabR*0.85,2.6*esc,0,7);ctx.fill(); // flor
+    ctx.fillStyle='#e07a5f';ctx.beginPath();ctx.arc(cabX+cabR*0.9,cabY-cabR*0.85,1.2*esc,0,7);ctx.fill();
+  } else {
+    ctx.beginPath();ctx.ellipse(cabX,cabY-cabR*0.7,cabR*1.9,cabR*0.5,0,0,7);ctx.fill(); // aba
+    ctx.beginPath();ctx.ellipse(cabX+1*esc,cabY-cabR*1.05,cabR*0.95,cabR*0.8,0,Math.PI,2*Math.PI);ctx.fill(); // copa
+    ctx.strokeStyle='#b8924a';ctx.lineWidth=1.3;ctx.stroke();
+    ctx.fillStyle='#b8924a';ctx.fillRect(cabX-cabR*0.9,cabY-cabR*0.95,cabR*1.8,1.6*esc); // faixa
+  }
 
   // ===== BRAÇO DA VARA (frente, com cotovelo) =====
   // manga (parte de cima, camisa) — sai exatamente do ombro
